@@ -24,6 +24,7 @@ import { createLoadFlame } from './components/LoadFlameModal/LoadFlameModal'
 import { Modal } from './components/Modal/Modal'
 import { createShareLinkModal } from './components/ShareLinkModal/ShareLinkModal'
 import { Slider } from './components/Sliders/Slider'
+import { createVariationSelector } from './components/VariationSelector/VariationSelector'
 import { ViewControls } from './components/ViewControls/ViewControls'
 import { ChangeHistoryContextProvider } from './contexts/ChangeHistoryContext'
 import { ThemeContextProvider, useTheme } from './contexts/ThemeContext'
@@ -123,8 +124,8 @@ function App(props: AppProps) {
   const totalProbability = createMemo(() =>
     sum(Object.values(flameDescriptor.transforms).map((f) => f.probability)),
   )
-
   const { loadModalIsOpen, showLoadFlameModal } = createLoadFlame(history)
+  const { showVariationSelector } = createVariationSelector(history)
 
   const finalRenderInterval = () =>
     loadModalIsOpen()
@@ -520,6 +521,15 @@ function App(props: AppProps) {
                   Load Flame
                 </button>
               </Card>
+              <Card class={ui.buttonCard}>
+                <button
+                  class={ui.addFlameButton}
+                  onClick={showVariationSelector}
+                >
+                  Preview Variations
+                </button>
+              </Card>
+
               <Card class={ui.buttonCard}>
                 <button
                   class={ui.addFlameButton}
