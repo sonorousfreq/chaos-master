@@ -52,12 +52,8 @@ import {
   generateTransformId,
   generateVariationId,
 } from './flame/transformFunction'
-import {
-  isParametricVariation,
-  isVariationType,
-  variationTypes,
-} from './flame/variations'
-import { getParamsEditor, getVariationDefault } from './flame/variations/utils'
+import { isParametricVariation, isVariationType } from './flame/variations'
+import { getParamsEditor } from './flame/variations/utils'
 import { Cross, Plus } from './icons'
 import { AutoCanvas } from './lib/AutoCanvas'
 import { Root } from './lib/Root'
@@ -336,24 +332,32 @@ function App(props: AppProps) {
                   <For each={recordEntries(transform.variations)}>
                     {([vid, variation]) => (
                       <>
-                        <select
-                          class={ui.select}
+                        <button
                           value={variation.type}
-                          onInput={(ev) => {
-                            const type = ev.target.value
-                            if (!isVariationType(type)) {
-                              return
-                            }
-                            setFlameDescriptor((draft) => {
-                              draft.transforms[tid]!.variations[vid] =
-                                getVariationDefault(type, variation.weight)
-                            })
+                          onClick={(_) => {
+                            showVariationSelector(variation)
+                              .then((newVariation) => {
+                                if (
+                                  newVariation === undefined ||
+                                  !isVariationType(newVariation.type)
+                                ) {
+                                  return
+                                }
+                                setFlameDescriptor((draft) => {
+                                  draft.transforms[tid]!.variations[vid] =
+                                    newVariation
+                                })
+                              })
+                              .catch((err: unknown) => {
+                                console.warn(
+                                  'Cannot load this variation, reason: ',
+                                  err,
+                                )
+                              })
                           }}
                         >
-                          {variationTypes.map((varName) => (
-                            <option value={varName}>{varName}</option>
-                          ))}
-                        </select>
+                          {variation.type}
+                        </button>
                         <Slider
                           value={variation.weight}
                           min={0}
@@ -521,15 +525,15 @@ function App(props: AppProps) {
                   Load Flame
                 </button>
               </Card>
-              <Card class={ui.buttonCard}>
-                <button
-                  class={ui.addFlameButton}
-                  onClick={showVariationSelector}
-                >
-                  Preview Variations
-                </button>
-              </Card>
-
+              {/* <Card class={ui.buttonCard}> */}
+              {/*   <button */}
+              {/*     class={ui.addFlameButton} */}
+              {/*     onClick={showVariationSelector} */}
+              {/*   > */}
+              {/*     Preview Variations */}
+              {/*   </button> */}
+              {/* </Card> */}
+              {/**/}
               <Card class={ui.buttonCard}>
                 <button
                   class={ui.addFlameButton}

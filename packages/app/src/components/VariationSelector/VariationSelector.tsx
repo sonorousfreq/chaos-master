@@ -1,13 +1,14 @@
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
+import { Dynamic } from 'solid-js/web'
 import { vec2f, vec4f } from 'typegpu/data'
-import { tid, vid } from '@/flame/examples/util'
+import { ChangeHistoryContextProvider } from '@/contexts/ChangeHistoryContext'
 import { Flam3 } from '@/flame/Flam3'
-import { generateVariationId } from '@/flame/transformFunction'
 import {
-  isParametricVariationType,
-  transformVariations,
-  variationTypes,
-} from '@/flame/variations'
+  generateTransformId,
+  generateVariationId,
+} from '@/flame/transformFunction'
+import { isParametricVariation, variationTypes } from '@/flame/variations'
+import { getParamsEditor, getVariationDefault } from '@/flame/variations/utils'
 import { AutoCanvas } from '@/lib/AutoCanvas'
 import { Camera2D } from '@/lib/Camera2D'
 import { Root } from '@/lib/Root'
@@ -21,32 +22,34 @@ import type { ChangeHistory } from '@/utils/createStoreHistory'
 
 const CANCEL = 'cancel'
 
-function Preview(props: { transformVariation: TransformVariationDescriptor }) {
+function Preview(props: { variation: TransformVariationDescriptor }) {
+  const tid = generateTransformId()
+  const vid = generateVariationId()
   const flameDesc: FlameDescriptor = {
     metadata: {
       author: 'person',
     },
     renderSettings: {
-      skipIters: 20,
+      skipIters: 1,
       camera: {
         zoom: 1,
         position: [0, 0],
       },
-      exposure: 0.5,
+      exposure: 0.3,
       drawMode: 'light',
     },
     transforms: {
-      [tid('d2523f69_dd2d_49cb_b14f_d9448e0bfb31')]: {
+      [tid]: {
         probability: 1,
         preAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
         postAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
-        color: { x: 0.8, y: 0.6 },
+        color: { x: 1, y: 0.4 },
         variations: {
-          [vid('bc571c35_0b03_4865_a765_d00cd71031a6')]: {
-            type: 'linear',
-            weight: 0.5,
-          },
-          [generateVariationId()]: { ...props.transformVariation },
+          // [vid('bc571c35_0b03_4865_a765_d00cd71031a6')]: {
+          //   type: 'linear',
+          //   weight: 0.5,
+          // },
+          [vid]: { ...props.variation },
         },
       },
     },
@@ -58,10 +61,31 @@ function Preview(props: { transformVariation: TransformVariationDescriptor }) {
           position={vec2f(...flameDesc.renderSettings.camera.position)}
           zoom={flameDesc.renderSettings.camera.zoom}
         >
+          <Show
+            when={isParametricVariation(props.variation) && props.variation}
+            keyed
+          >
+            {(variation) => (
+              <Dynamic
+                {...getParamsEditor(variation)}
+                setValue={(value) => {
+                  const variationDraft =
+                    flameDesc.transforms[tid]?.variations[vid]
+                  if (
+                    variationDraft === undefined ||
+                    !isParametricVariation(variationDraft)
+                  ) {
+                    throw new Error(`Unreachable code`)
+                  }
+                  variationDraft.params = value
+                }}
+              />
+            )}
+          </Show>
           <Flam3
             quality={0.99}
-            pointCountPerBatch={2e4}
-            adaptiveFilterEnabled={true}
+            pointCountPerBatch={4e5}
+            adaptiveFilterEnabled={false}
             flameDescriptor={flameDesc}
             renderInterval={1}
             onExportImage={undefined}
@@ -74,18 +98,13 @@ function Preview(props: { transformVariation: TransformVariationDescriptor }) {
 }
 
 type VariationSelectorModalProps = {
-  respond: (flameDescriptor: FlameDescriptor | typeof CANCEL) => void
+  currentVar: TransformVariationDescriptor
+  respond: (variation: TransformVariationDescriptor | typeof CANCEL) => void
 }
 
 function ShowVariationSelector(props: VariationSelectorModalProps) {
   const previewVariations: TransformVariationDescriptor[] = variationTypes.map(
-    (name) => ({
-      type: name,
-      weight: 0.5,
-      params: isParametricVariationType(name)
-        ? transformVariations[name].paramDefaults
-        : undefined,
-    }),
+    (name) => getVariationDefault(name, 1),
   )
 
   return (
@@ -105,12 +124,11 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
             <button
               class={ui.item}
               onClick={() => {
-                // todo: add flame descriptor update / modify sent one
-                props.respond(CANCEL)
+                props.respond(variation)
               }}
             >
               <DelayedShow delayMs={i() * 30}>
-                <Preview transformVariation={variation} />
+                <Preview variation={variation} />
               </DelayedShow>
               <div class={ui.itemTitle}>{variation.type}</div>
             </button>
@@ -128,17 +146,26 @@ export function createVariationSelector(
   const [varSelectorModalIsOpen, setVarSelectorModalIsOpen] =
     createSignal(false)
 
-  async function showVariationSelector() {
+  async function showVariationSelector(
+    currentVar: TransformVariationDescriptor,
+  ) {
     setVarSelectorModalIsOpen(true)
-    const result = await requestModal<FlameDescriptor | typeof CANCEL>({
-      content: ({ respond }) => <ShowVariationSelector respond={respond} />,
+    const result = await requestModal<
+      TransformVariationDescriptor | typeof CANCEL
+    >({
+      content: ({ respond }) => (
+        <ChangeHistoryContextProvider value={history}>
+          <ShowVariationSelector currentVar={currentVar} respond={respond} />
+        </ChangeHistoryContextProvider>
+      ),
     })
     setVarSelectorModalIsOpen(false)
     if (result === CANCEL) {
       return
     }
+    return result
     // structuredClone required in order to not modify the original, as store in solidjs does
-    history.replace(structuredClone(result))
+    // history.replace(structuredClone(result))
   }
 
   return {
