@@ -19,12 +19,24 @@ import { ModalTitleBar } from '../Modal/ModalTitleBar'
 import type { FlameDescriptor } from '@/flame/schema/flameSchema'
 import type { TransformVariationDescriptor } from '@/flame/variations'
 import type { ChangeHistory } from '@/utils/createStoreHistory'
+import { vid } from '@/flame/examples/util'
 
 const CANCEL = 'cancel'
 
 function Preview(props: { variation: TransformVariationDescriptor }) {
-  const tid = generateTransformId()
-  const vid = generateVariationId()
+  const transformId = generateTransformId()
+  const variationId = generateVariationId()
+  const simplePreAffine = { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 }
+  const popcornPreAffine = {
+    a: 1,
+    b: 0,
+    c: -0.28224055579678675,
+    d: 0,
+    e: 1,
+    f: -0.39079461571862784,
+  }
+  const affineTransform =
+    props.variation.type == 'popcorn' ? popcornPreAffine : simplePreAffine
   const flameDesc: FlameDescriptor = {
     metadata: {
       author: 'person',
@@ -39,17 +51,13 @@ function Preview(props: { variation: TransformVariationDescriptor }) {
       drawMode: 'light',
     },
     transforms: {
-      [tid]: {
-        probability: 1,
-        preAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
+      [transformId]: {
+        probability: 1.0,
+        preAffine: affineTransform,
         postAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
         color: { x: 1, y: 0.4 },
         variations: {
-          // [vid('bc571c35_0b03_4865_a765_d00cd71031a6')]: {
-          //   type: 'linear',
-          //   weight: 0.5,
-          // },
-          [vid]: { ...props.variation },
+          [variationId]: { ...props.variation, weight: 1.0 },
         },
       },
     },
@@ -70,7 +78,7 @@ function Preview(props: { variation: TransformVariationDescriptor }) {
                 {...getParamsEditor(variation)}
                 setValue={(value) => {
                   const variationDraft =
-                    flameDesc.transforms[tid]?.variations[vid]
+                    flameDesc.transforms[transformId]?.variations[variationId]
                   if (
                     variationDraft === undefined ||
                     !isParametricVariation(variationDraft)
@@ -164,8 +172,6 @@ export function createVariationSelector(
       return
     }
     return result
-    // structuredClone required in order to not modify the original, as store in solidjs does
-    // history.replace(structuredClone(result))
   }
 
   return {
