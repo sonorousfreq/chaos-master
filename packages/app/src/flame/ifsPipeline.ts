@@ -115,6 +115,7 @@ export function createIFSPipeline(
 
       var point = Point();
       point.position = randomUnitDisk();
+      point.color = point.position;
 
       for (var i = 0; i < ITER_COUNT; i += 1) {
         let flameIndex = random();
