@@ -335,7 +335,14 @@ function App(props: AppProps) {
                         <button
                           value={variation.type}
                           onClick={(_) => {
-                            showVariationSelector(variation, flameDescriptor)
+                            showVariationSelector(
+                              variation,
+                              structuredClone(
+                                JSON.parse(JSON.stringify(flameDescriptor)),
+                              ),
+                              tid,
+                              vid,
+                            )
                               .then((newVariation) => {
                                 if (
                                   newVariation === undefined ||
