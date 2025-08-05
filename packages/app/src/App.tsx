@@ -343,16 +343,21 @@ function App(props: AppProps) {
                               tid,
                               vid,
                             )
-                              .then((newVariation) => {
+                              .then((newValue) => {
                                 if (
-                                  newVariation === undefined ||
-                                  !isVariationType(newVariation.type)
+                                  newValue === undefined ||
+                                  newValue.transform === undefined ||
+                                  newValue.variation === undefined ||
+                                  (newValue.variation !== 'cancel' &&
+                                    !isVariationType(newValue.variation.type))
                                 ) {
                                   return
                                 }
                                 setFlameDescriptor((draft) => {
-                                  draft.transforms[tid]!.variations[vid] =
-                                    newVariation
+                                  draft.transforms[tid] =
+                                    newValue.transform as TransformFunction
+                                  // draft.transforms[tid]!.variations[vid] =
+                                  // newVariation
                                 })
                               })
                               .catch((err: unknown) => {

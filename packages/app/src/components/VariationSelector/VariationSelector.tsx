@@ -17,12 +17,14 @@ import { useRequestModal } from '../Modal/ModalContext'
 import { ModalTitleBar } from '../Modal/ModalTitleBar'
 import type {
   FlameDescriptor,
+  TransformFunction,
   TransformId,
   VariationId,
 } from '@/flame/schema/flameSchema'
 import type { TransformVariationDescriptor } from '@/flame/variations'
 import type { ChangeHistory } from '@/utils/createStoreHistory'
 import { useKeyboardShortcuts } from '@/utils/useKeyboardShortcuts'
+import { recordEntries } from '@/utils/record'
 
 const CANCEL = 'cancel'
 
@@ -48,50 +50,76 @@ function Preview(props: { flame: FlameDescriptor }) {
     </Root>
   )
 }
-
+type respondType = {
+  transform: TransformFunction | typeof CANCEL
+  variation: TransformVariationDescriptor | typeof CANCEL
+}
 type VariationSelectorModalProps = {
   currentVar: TransformVariationDescriptor
   currentFlame: FlameDescriptor
   transformId: TransformId
   variationId: VariationId
-  respond: (variation: TransformVariationDescriptor | typeof CANCEL) => void
+  respond: (value: respondType) => void
 }
 
 function ShowVariationSelector(props: VariationSelectorModalProps) {
-  const variationPreviewFlames: FlameDescriptor[] = variationTypes.map((name) =>
-    getVariationPreviewFlame(name),
-  )
+  const variationPreviewFlames: Record<string, FlameDescriptor> =
+    Object.fromEntries(
+      variationTypes.map((name) => [name, getVariationPreviewFlame(name)]),
+    )
+  const [variationExamples, setVariationExamples] = createSignal<
+    Record<string, FlameDescriptor>
+  >(variationPreviewFlames)
   const [showcaseItem, setShowcaseItem] = createSignal<
     FlameDescriptor | undefined
   >(undefined)
-  const [itemId, setItemId] = createSignal<number | null>(null)
+  const [itemId, setItemId] = createSignal<string | null>(null)
 
   const variationPreviewFlame = () => {
     const selectedItem = showcaseItem()
     if (selectedItem !== undefined) {
-      const variation = getVarFromPreviewFlame(selectedItem)
+      const [transform, variation] = getTransformFromPreviewFlame(selectedItem)
       const clone = structuredClone(props.currentFlame)
-      const transforms = clone.transforms[props.transformId]
-      if (transforms !== undefined && variation) {
-        transforms.variations[props.variationId] = variation
+      const previewTransform = clone.transforms[props.transformId]
+      if (
+        transform !== undefined &&
+        variation !== undefined &&
+        previewTransform !== undefined
+      ) {
+        previewTransform.preAffine = transform.preAffine
+        previewTransform.variations[props.variationId] = variation
         return clone
       }
       return clone
     }
     return props.currentFlame
   }
-  const getVarFromPreviewFlame = (
+  const getVarFromPreviewFlame = (flame: FlameDescriptor) => {
+    return getTransformFromPreviewFlame(flame)[1]
+  }
+  const getTransformFromPreviewFlame = (
     flame: FlameDescriptor,
-  ): TransformVariationDescriptor | undefined => {
-    return Object.values(Object.values(flame.transforms)[0]!.variations)[0]
+  ): [
+    TransformFunction | undefined,
+    TransformVariationDescriptor | undefined,
+  ] => {
+    const transform = Object.values(flame.transforms)[0]
+    if (transform !== undefined) {
+      const variation = Object.values(transform.variations)[0]
+      if (variation !== undefined) {
+        return [transform, variation]
+      }
+    }
+    return [undefined, undefined]
   }
   useKeyboardShortcuts({
     Enter: () => {
       const variationFlame = showcaseItem()
       if (itemId() !== null && variationFlame !== undefined) {
-        const variation = getVarFromPreviewFlame(variationFlame)
-        if (variation !== undefined) {
-          props.respond(variation)
+        const [transform, variation] =
+          getTransformFromPreviewFlame(variationFlame)
+        if (transform !== undefined && variation !== undefined) {
+          props.respond({ transform, variation })
         }
       }
       return true
@@ -101,7 +129,7 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
     <>
       <ModalTitleBar
         onClose={() => {
-          props.respond(CANCEL)
+          props.respond({ transform: CANCEL, variation: CANCEL })
         }}
       >
         Select Variation
@@ -110,32 +138,32 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
       <h2>Variation Gallery</h2>
       <section class={ui.variationPreview}>
         <section class={ui.gallery}>
-          <For each={variationPreviewFlames}>
-            {(variationPreviewFlame, i) => {
-              const variation = getVarFromPreviewFlame(variationPreviewFlame)
+          <For each={recordEntries(variationExamples())}>
+            {([id, variationExample], i) => {
+              const variation = getVarFromPreviewFlame(variationExample)
               return (
                 variation && (
                   <div>
                     <button
                       class={ui.item}
                       classList={{
-                        [ui.selected]: itemId() === i(),
+                        [ui.selected]: itemId() === id,
                       }}
                       onClick={() => {
                         setShowcaseItem(
                           showcaseItem() === undefined
-                            ? variationPreviewFlame
+                            ? variationExample
                             : undefined,
                         )
-                        setItemId(i())
+                        setItemId(id)
                       }}
-                      onMouseEnter={() =>
-                        setShowcaseItem(variationPreviewFlame)
-                      }
-                      onMouseLeave={() => setShowcaseItem(undefined)}
+                      // onMouseEnter={() =>
+                      //   setShowcaseItem(variationPreviewFlame)
+                      // }
+                      // onMouseLeave={() => setShowcaseItem(undefined)}
                     >
                       <DelayedShow delayMs={i() * 30}>
-                        <Preview flame={variationPreviewFlame} />
+                        <Preview flame={variationExample} />
                       </DelayedShow>
                       <div class={ui.itemTitle}>{variation.type}</div>
                     </button>
@@ -182,9 +210,7 @@ export function createVariationSelector(
     vid: VariationId,
   ) {
     setVarSelectorModalIsOpen(true)
-    const result = await requestModal<
-      TransformVariationDescriptor | typeof CANCEL
-    >({
+    const result = await requestModal<respondType>({
       class: ui.modalNoScroll,
       content: ({ respond }) => (
         <ChangeHistoryContextProvider value={history}>
@@ -199,7 +225,7 @@ export function createVariationSelector(
       ),
     })
     setVarSelectorModalIsOpen(false)
-    if (result === CANCEL) {
+    if (result.transform === CANCEL || result.variation === CANCEL) {
       return
     }
     return result
