@@ -135,6 +135,8 @@ function getVariationPreviewTransform(
   return variationPreviewTransforms[type]
 }
 
+export const transformPreviewId = generateTransformId()
+export const variationPreviewId = generateVariationId()
 export function getVariationPreviewFlame(type: TransformVariationType) {
   const defaultAffineTransform = {
     preAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
@@ -157,7 +159,7 @@ export function getVariationPreviewFlame(type: TransformVariationType) {
       },
     },
     transforms: {
-      [generateTransformId()]: {
+      [transformPreviewId]: {
         probability: 1,
         preAffine: transformSpec.preAffine
           ? transformSpec.preAffine
@@ -165,7 +167,7 @@ export function getVariationPreviewFlame(type: TransformVariationType) {
         postAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
         color: { x: 0, y: 0 },
         variations: {
-          [generateVariationId()]: transformSpec.variations?.[varPreviewId]
+          [variationPreviewId]: transformSpec.variations?.[varPreviewId]
             ? transformSpec.variations[varPreviewId]
             : getVariationDefault(type, 1.0),
         },

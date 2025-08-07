@@ -7,6 +7,8 @@ import { isParametricVariation, variationTypes } from '@/flame/variations'
 import {
   getParamsEditor,
   getVariationPreviewFlame,
+  transformPreviewId,
+  variationPreviewId,
 } from '@/flame/variations/utils'
 import { AutoCanvas } from '@/lib/AutoCanvas'
 import { Camera2D } from '@/lib/Camera2D'
@@ -22,9 +24,13 @@ import type {
   VariationId,
 } from '@/flame/schema/flameSchema'
 import type { TransformVariationDescriptor } from '@/flame/variations'
-import type { ChangeHistory } from '@/utils/createStoreHistory'
+import {
+  createStoreHistory,
+  type ChangeHistory,
+} from '@/utils/createStoreHistory'
 import { useKeyboardShortcuts } from '@/utils/useKeyboardShortcuts'
 import { recordEntries } from '@/utils/record'
+import { createStore } from 'solid-js/store'
 
 const CANCEL = 'cancel'
 
@@ -67,9 +73,9 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
     Object.fromEntries(
       variationTypes.map((name) => [name, getVariationPreviewFlame(name)]),
     )
-  const [variationExamples, setVariationExamples] = createSignal<
-    Record<string, FlameDescriptor>
-  >(variationPreviewFlames)
+  const [variationExamples, setVariationExamples] = createStoreHistory(
+    createStore<Record<string, FlameDescriptor>>(variationPreviewFlames),
+  )
   const [showcaseItem, setShowcaseItem] = createSignal<
     FlameDescriptor | undefined
   >(undefined)
@@ -138,7 +144,7 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
       <h2>Variation Gallery</h2>
       <section class={ui.variationPreview}>
         <section class={ui.gallery}>
-          <For each={recordEntries(variationExamples())}>
+          <For each={recordEntries(variationExamples)}>
             {([id, variationExample], i) => {
               const variation = getVarFromPreviewFlame(variationExample)
               return (
@@ -167,21 +173,36 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
                       </DelayedShow>
                       <div class={ui.itemTitle}>{variation.type}</div>
                     </button>
-                    <div class={ui.itemParams}>
-                      <Show
-                        when={isParametricVariation(variation) && variation}
-                        keyed
-                      >
-                        {(variation) => (
-                          <Dynamic
-                            {...getParamsEditor(variation)}
-                            setValue={(value) => {
-                              variation.params = value
-                            }}
-                          />
-                        )}
-                      </Show>
-                    </div>
+                    <Show when={itemId() == id}>
+                      <div class={ui.itemParams}>
+                        <Show
+                          when={isParametricVariation(variation) && variation}
+                          keyed
+                        >
+                          {(variation) => (
+                            <Dynamic
+                              {...getParamsEditor(variation)}
+                              setValue={(value) => {
+                                setVariationExamples(
+                                  (draft: Record<string, FlameDescriptor>) => {
+                                    const variationDraft =
+                                      draft[id]?.transforms[transformPreviewId]
+                                        ?.variations[variationPreviewId]
+                                    if (
+                                      variationDraft === undefined ||
+                                      !isParametricVariation(variationDraft)
+                                    ) {
+                                      throw new Error(`Unreachable code`)
+                                    }
+                                    variationDraft.params = value
+                                  },
+                                )
+                              }}
+                            />
+                          )}
+                        </Show>
+                      </div>
+                    </Show>
                   </div>
                 )
               )
