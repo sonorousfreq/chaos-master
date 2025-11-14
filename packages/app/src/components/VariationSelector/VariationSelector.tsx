@@ -4,6 +4,10 @@ import { Dynamic } from 'solid-js/web'
 import { vec2f, vec4f } from 'typegpu/data'
 import { clamp } from 'typegpu/std'
 import { ChangeHistoryContextProvider } from '@/contexts/ChangeHistoryContext'
+import {
+  DEFAULT_VARIATION_PREVIEW_POINT_COUNT,
+  DEFAULT_VARIATION_SHOW_DELAY_MS,
+} from '@/defaults'
 import { Flam3 } from '@/flame/Flam3'
 import {
   MAX_CAMERA_ZOOM_VALUE,
@@ -25,6 +29,7 @@ import { createStoreHistory } from '@/utils/createStoreHistory'
 import { recordEntries } from '@/utils/record'
 import { useIntersectionObserver } from '@/utils/useIntersectionObserver'
 import { useKeyboardShortcuts } from '@/utils/useKeyboardShortcuts'
+import { AffineEditor } from '../AffineEditor/AffineEditor'
 import { Button } from '../Button/Button'
 import { ButtonGroup } from '../Button/ButtonGroup'
 import { DelayedShow } from '../DelayedShow/DelayedShow'
@@ -64,7 +69,7 @@ function PreviewFinalFlame(props: {
         >
           <Flam3
             quality={0.99}
-            pointCountPerBatch={1e6}
+            pointCountPerBatch={DEFAULT_VARIATION_PREVIEW_POINT_COUNT}
             adaptiveFilterEnabled={false}
             flameDescriptor={props.flame}
             renderInterval={10}
@@ -77,7 +82,7 @@ function PreviewFinalFlame(props: {
   )
 }
 
-function Preview(props: { flame: FlameDescriptor }) {
+function VariationPreview(props: { flame: FlameDescriptor }) {
   return (
     <Root adapterOptions={{ powerPreference: 'high-performance' }}>
       <AutoCanvas pixelRatio={1}>
@@ -87,7 +92,7 @@ function Preview(props: { flame: FlameDescriptor }) {
         >
           <Flam3
             quality={0.99}
-            pointCountPerBatch={1e5}
+            pointCountPerBatch={DEFAULT_VARIATION_PREVIEW_POINT_COUNT}
             adaptiveFilterEnabled={false}
             flameDescriptor={props.flame}
             renderInterval={10}
@@ -123,7 +128,10 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
     createStore<Record<string, FlameDescriptor>>(variationPreviewFlames),
   )
   const [selectedItemId, setSelectedItemId] = createSignal<string | null>(null)
-  const [touchlessPreview, setTouchlessPreview] = createSignal<boolean>(false)
+  const [selectedPreviewItemId, setSelectedPreviewItemId] = createSignal<
+    string | null
+  >(null)
+  const [touchlessPreview, setTouchlessPreview] = createSignal<boolean>(true)
   const [examplesShown, setExamplesShown] = createSignal<number>(lazyLoadAmount)
   const loadMoreExamples = () => {
     setExamplesShown((prev) =>
@@ -131,7 +139,13 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
     )
   }
   const [sentinel, setSentinel] = createSignal<HTMLDivElement | null>(null)
-  useIntersectionObserver(() => sentinel(), loadMoreExamples)
+  const [scrollableSidebar, setScrollableSidebar] =
+    createSignal<HTMLDivElement | null>(null)
+  useIntersectionObserver(
+    () => sentinel(),
+    () => scrollableSidebar(),
+    loadMoreExamples,
+  )
 
   const [previewFlame, setPreviewFlame] = createStoreHistory(
     createStore<FlameDescriptor>(structuredClone(props.currentFlame)),
@@ -190,7 +204,7 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
     return [undefined, undefined]
   }
   const setPreviewFlameShowcaseVariation = () => {
-    const itemId = selectedItemId()
+    const itemId = getPreviewSelectionId()
     if (itemId !== null) {
       const selectedItem = variationExamples[itemId]
       if (selectedItem) {
@@ -202,7 +216,7 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
             if (previewTr !== undefined) {
               previewTr.preAffine = transform.preAffine
               previewTr.variations[props.variationId] = variation
-              // todo: see what else to copy from variation flame setup
+              // TODO: see what else to copy from variation flame setup
               draft.renderSettings.exposure =
                 selectedItem.renderSettings.exposure
               // copy over initial camera settings
@@ -233,6 +247,15 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
     setPreviewFlameShowcaseVariation()
   }
 
+  const getPreviewSelectionId = () => {
+    return selectedPreviewItemId() ?? selectedItemId() ?? null
+  }
+
+  const setPreviewSelection = (id: string | null) => {
+    setSelectedPreviewItemId(id)
+    setPreviewFlameShowcaseVariation()
+  }
+
   const applySelection = () => {
     const itemId = selectedItemId()
     if (itemId !== null) {
@@ -242,7 +265,10 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
           getTransformFromPreviewFlame(selectedItem)
         if (transform !== undefined && variation !== undefined) {
           props.respond({
-            transform,
+            transform: {
+              ...transform,
+              preAffine: previewFlame.transforms[props.transformId]!.preAffine,
+            },
             variation: structuredClone(JSON.parse(JSON.stringify(variation))),
           })
           return true
@@ -253,7 +279,7 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
   }
   useKeyboardShortcuts({
     Enter: () => {
-      // todo: sometimes goes out of focus, and does not trigger on Enter
+      // TODO: sometimes goes out of focus, and does not trigger on Enter
       return applySelection()
     },
   })
@@ -268,8 +294,7 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
         <span class={ui.undoMessage}>You can undo this operation.</span>
       </ModalTitleBar>
       <section class={ui.variationPreview}>
-        <div class={ui.modalItem}>
-          <h2 class={ui.selectorColumnTitle}>Variation Gallery</h2>
+        <div ref={setScrollableSidebar} class={ui.variationSelectorSidebar}>
           <section class={ui.gallery}>
             <For each={recordEntries(variationExamples)}>
               {([id, variationExample], i) => {
@@ -289,51 +314,20 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
                           }}
                           onMouseEnter={() => {
                             if (touchlessPreview()) {
-                              toggleSelectedItem(id)
+                              setPreviewSelection(id)
                             }
                           }}
+                          onMouseLeave={() => {
+                            setPreviewSelection(null)
+                          }}
                         >
-                          <DelayedShow delayMs={i() * 50}>
-                            <Preview flame={variationExample} />
+                          <DelayedShow
+                            delayMs={i() * DEFAULT_VARIATION_SHOW_DELAY_MS}
+                          >
+                            <VariationPreview flame={variationExample} />
                           </DelayedShow>
                           <div class={ui.itemTitle}>{variation.type}</div>
                         </button>
-                        <Show when={selectedItemId() === id}>
-                          <div class={ui.itemParams}>
-                            <Show
-                              when={
-                                // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-                                isParametricVariation(variation) && variation
-                              }
-                              keyed
-                            >
-                              {(variation) => (
-                                <Dynamic
-                                  {...getParamsEditor(variation)}
-                                  setValue={(value) => {
-                                    setVariationExamples(
-                                      (
-                                        draft: Record<string, FlameDescriptor>,
-                                      ) => {
-                                        const variationDraft =
-                                          draft[id]?.transforms[
-                                            transformPreviewId
-                                          ]?.variations[variationPreviewId]
-                                        if (
-                                          variationDraft === undefined ||
-                                          !isParametricVariation(variationDraft)
-                                        ) {
-                                          throw new Error(`Unreachable code`)
-                                        }
-                                        variationDraft.params = value
-                                      },
-                                    )
-                                  }}
-                                />
-                              )}
-                            </Show>
-                          </div>
-                        </Show>
                       </div>
                     </Show>
                   )
@@ -343,54 +337,112 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
             <div ref={setSentinel} class={ui.sentinel}></div>
           </section>
         </div>
-        <div class={ui.modalItem}>
-          <div>
-            <h2 class={ui.selectorColumnTitle}>
-              Preview: Flame{' '}
-              <Show when={selectedItemId() !== null}>
-                <span>+ {selectedItemId()} variation</span>
-              </Show>
-            </h2>
-          </div>
-          <div class={ui.flamePreview}>
-            <div class={ui.flamePreviewFlame}>
-              <PreviewFinalFlame
-                flame={previewFlame}
-                setFlamePosition={setFlamePosition}
-                setFlameZoom={setFlameZoom}
-              />
-            </div>
-            <div class={ui.flamePreviewControls}>
-              <ButtonGroup>
-                <Button
-                  onClick={() => {
-                    setFlameZoom(1)
-                    setFlamePosition(vec2f())
-                  }}
-                  style={{ 'min-width': '4rem' }}
-                >
-                  {(previewFlame.renderSettings.camera.zoom * 100).toFixed(0)}%
-                </Button>
 
-                <Button
-                  onClick={() => {
-                    setTouchlessPreview(!touchlessPreview())
-                  }}
-                >
-                  {touchlessPreview() ? <HoverEyePreview /> : <HoverPreview />}
-                </Button>
-              </ButtonGroup>
-              <ButtonGroup>
-                <Button
-                  onClick={() => {
-                    applySelection()
-                  }}
-                  disabled={selectedItemId() === null}
-                >
-                  Apply
-                </Button>
-              </ButtonGroup>
-            </div>
+        <div class={ui.variationSelectorSidebarOptions}>
+          <For each={recordEntries(variationExamples)}>
+            {([id, variationExample], _) => {
+              const variation = getVarFromPreviewFlame(variationExample)
+              return (
+                variation && (
+                  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+                  <>
+                    <Show when={selectedItemId() === id}>
+                      <Show
+                        when={
+                          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+                          isParametricVariation(variation) && variation
+                        }
+                        keyed
+                      >
+                        {(variation) => (
+                          <>
+                            <h2>Variation Parameters</h2>
+                            <div class={ui.itemParams}>
+                              <Dynamic
+                                {...getParamsEditor(variation)}
+                                setValue={(value) => {
+                                  setVariationExamples(
+                                    (
+                                      draft: Record<string, FlameDescriptor>,
+                                    ) => {
+                                      const variationDraft =
+                                        draft[id]?.transforms[
+                                          transformPreviewId
+                                        ]?.variations[variationPreviewId]
+                                      if (
+                                        variationDraft === undefined ||
+                                        !isParametricVariation(variationDraft)
+                                      ) {
+                                        throw new Error(`Unreachable code`)
+                                      }
+                                      variationDraft.params = value
+                                    },
+                                  )
+                                }}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </Show>
+                    </Show>
+                  </>
+                )
+              )
+            }}
+          </For>
+          <AffineEditor
+            class={ui.affineEditor}
+            transforms={{
+              [props.transformId]: previewFlame.transforms[props.transformId]!,
+            }}
+            setTransforms={(setFn) => {
+              setPreviewFlame((draft) => {
+                setFn(draft.transforms)
+              })
+            }}
+          />
+        </div>
+        <div class={ui.flamePreview}>
+          <div class={ui.flamePreviewFlame}>
+            <PreviewFinalFlame
+              flame={previewFlame}
+              setFlamePosition={setFlamePosition}
+              setFlameZoom={setFlameZoom}
+            />
+          </div>
+          <div class={ui.flamePreviewControls}>
+            <ButtonGroup>
+              <Button
+                onClick={() => {
+                  setFlameZoom(1)
+                  setFlamePosition(vec2f())
+                }}
+                style={{ 'min-width': '4rem' }}
+              >
+                {(previewFlame.renderSettings.camera.zoom * 100).toFixed(0)}%
+              </Button>
+
+              <Button
+                onClick={() => {
+                  setTouchlessPreview(!touchlessPreview())
+                }}
+              >
+                {touchlessPreview() ? <HoverEyePreview /> : <HoverPreview />}
+              </Button>
+            </ButtonGroup>
+            <ButtonGroup>
+              <Button
+                onClick={() => {
+                  applySelection()
+                }}
+                disabled={selectedItemId() === null}
+              >
+                Apply
+                <Show when={selectedItemId() !== null}>
+                  <span> {selectedItemId()} variation</span>
+                </Show>
+              </Button>
+            </ButtonGroup>
           </div>
         </div>
       </section>

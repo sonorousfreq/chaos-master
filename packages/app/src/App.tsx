@@ -292,6 +292,7 @@ function App(props: AppProps) {
         <Show when={showSidebar()}>
           <div class={ui.sidebar}>
             <AffineEditor
+              class={ui.affineEditor}
               transforms={flameDescriptor.transforms}
               setTransforms={(setFn) => {
                 setFlameDescriptor((draft) => {
@@ -309,7 +310,20 @@ function App(props: AppProps) {
             />
             <For each={recordEntries(flameDescriptor.transforms)}>
               {([tid, transform]) => (
-                <Card>
+                <div class={ui.transformGrid}>
+                  <svg class={ui.variationButtonSvgColor}>
+                    <g
+                      class={ui.variationButtonColor}
+                      style={{
+                        '--color': handleColor(
+                          theme(),
+                          vec2f(transform.color.x, transform.color.y),
+                        ),
+                      }}
+                    >
+                      <circle class={ui.variationButtonColorCircle} />
+                    </g>
+                  </svg>
                   <button
                     class={ui.deleteFlameButton}
                     onClick={() => {
@@ -320,126 +334,144 @@ function App(props: AppProps) {
                   >
                     <Cross />
                   </button>
-                  <Slider
-                    label="Probability"
-                    value={transform.probability}
-                    min={0}
-                    max={1}
-                    step={0.001}
-                    onInput={(probability) => {
-                      setFlameDescriptor((draft) => {
-                        draft.transforms[tid]!.probability = probability
-                      })
+                  <div
+                    // class={ui.transformGridRow}
+                    classList={{
+                      [ui.transformGridRow]: true,
+                      [ui.transformGridFirstRow]: true,
                     }}
-                    formatValue={(value) =>
-                      formatPercent(value / totalProbability())
-                    }
-                  />
+                  >
+                    <Slider
+                      class={ui.transformGridFirstRow}
+                      label="Probability"
+                      value={transform.probability}
+                      min={0}
+                      max={1}
+                      step={0.001}
+                      onInput={(probability) => {
+                        setFlameDescriptor((draft) => {
+                          draft.transforms[tid]!.probability = probability
+                        })
+                      }}
+                      formatValue={(value) =>
+                        formatPercent(value / totalProbability())
+                      }
+                    />
+                  </div>
                   <For each={recordEntries(transform.variations)}>
                     {([vid, variation]) => (
                       <>
-                        <button
-                          class={ui.variationButton}
-                          style={{
-                            '--color': handleColor(
-                              theme(),
-                              vec2f(transform.color.x, transform.color.y),
-                            ),
-                          }}
-                          value={variation.type}
-                          onClick={(_) => {
-                            showVariationSelector(
-                              structuredClone(
-                                JSON.parse(JSON.stringify(variation)),
-                              ),
-                              structuredClone(
-                                JSON.parse(JSON.stringify(flameDescriptor)),
-                              ),
-                              tid,
-                              vid,
-                            )
-                              .then((newValue) => {
-                                if (
-                                  newValue === undefined ||
-                                  !isVariationType(newValue.variation.type)
-                                ) {
-                                  return
-                                }
-                                setFlameDescriptor((draft) => {
-                                  // todo: what else to update
-                                  // from preview selector, if one transform can have multiple
-                                  // variations, then transform preAffine should be preserved?
-                                  draft.transforms[tid]!.preAffine =
-                                    newValue.transform.preAffine
-                                  draft.transforms[tid]!.variations[vid] =
-                                    newValue.variation
+                        <div class={ui.transformGridRow}>
+                          <button
+                            class={ui.variationButton}
+                            value={variation.type}
+                            onClick={(_) => {
+                              showVariationSelector(
+                                structuredClone(
+                                  JSON.parse(JSON.stringify(variation)),
+                                ),
+                                structuredClone(
+                                  JSON.parse(JSON.stringify(flameDescriptor)),
+                                ),
+                                tid,
+                                vid,
+                              )
+                                .then((newValue) => {
+                                  if (
+                                    newValue === undefined ||
+                                    !isVariationType(newValue.variation.type)
+                                  ) {
+                                    return
+                                  }
+                                  setFlameDescriptor((draft) => {
+                                    // TODO: what else to update from preview selector,
+                                    // if one transform can have multiple variations,
+                                    // then transform preAffine should be preserved?
+                                    draft.transforms[tid]!.preAffine =
+                                      newValue.transform.preAffine
+                                    draft.transforms[tid]!.variations[vid] =
+                                      newValue.variation
+                                  })
                                 })
+                                .catch((err: unknown) => {
+                                  console.warn(
+                                    'Cannot load this variation, reason: ',
+                                    err,
+                                  )
+                                })
+                            }}
+                          >
+                            <div class={ui.variationButtonText}>
+                              {variation.type}
+                            </div>
+                          </button>
+                          <Slider
+                            value={variation.weight}
+                            min={0}
+                            max={1}
+                            step={0.001}
+                            onInput={(weight) => {
+                              setFlameDescriptor((draft) => {
+                                draft.transforms[tid]!.variations[vid]!.weight =
+                                  weight
                               })
-                              .catch((err: unknown) => {
-                                console.warn(
-                                  'Cannot load this variation, reason: ',
-                                  err,
-                                )
+                            }}
+                            formatValue={formatPercent}
+                          />
+                          <button
+                            class={ui.deleteVariationButton}
+                            onClick={() => {
+                              setFlameDescriptor((draft) => {
+                                delete draft.transforms[tid]!.variations[vid]
                               })
-                          }}
-                        >
-                          {variation.type}
-                        </button>
-                        <Slider
-                          value={variation.weight}
-                          min={0}
-                          max={1}
-                          step={0.001}
-                          onInput={(weight) => {
-                            setFlameDescriptor((draft) => {
-                              draft.transforms[tid]!.variations[vid]!.weight =
-                                weight
-                            })
-                          }}
-                          formatValue={formatPercent}
-                        />
+                            }}
+                          >
+                            <Cross />
+                          </button>
+                        </div>
                         <Show
                           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
                           when={isParametricVariation(variation) && variation}
                           keyed
                         >
                           {(variation) => (
-                            <Dynamic
-                              {...getParamsEditor(variation)}
-                              setValue={(value) => {
-                                setFlameDescriptor((draft) => {
-                                  const variationDraft =
-                                    draft.transforms[tid]?.variations[vid]
-                                  if (
-                                    variationDraft === undefined ||
-                                    !isParametricVariation(variationDraft)
-                                  ) {
-                                    throw new Error(`Unreachable code`)
-                                  }
-                                  variationDraft.params = value
-                                })
-                              }}
-                            />
+                            <div class={ui.transformGridRow}>
+                              <Dynamic
+                                {...getParamsEditor(variation)}
+                                setValue={(value) => {
+                                  setFlameDescriptor((draft) => {
+                                    const variationDraft =
+                                      draft.transforms[tid]?.variations[vid]
+                                    if (
+                                      variationDraft === undefined ||
+                                      !isParametricVariation(variationDraft)
+                                    ) {
+                                      throw new Error(`Unreachable code`)
+                                    }
+                                    variationDraft.params = value
+                                  })
+                                }}
+                              />
+                            </div>
                           )}
                         </Show>
                       </>
                     )}
                   </For>
-                  <Card class={ui.buttonCard}>
-                    <button
-                      class={ui.addTransformVariationButton}
-                      onClick={() => {
-                        setFlameDescriptor((draft) => {
-                          draft.transforms[tid]!.variations[
-                            generateVariationId()
-                          ] = structuredClone(getVariationDefault('linear', 1))
-                        })
-                      }}
-                    >
-                      <Plus />
-                    </button>
-                  </Card>
-                </Card>
+
+                  <button
+                    class={ui.addTransformVariationButton}
+                    onClick={() => {
+                      setFlameDescriptor((draft) => {
+                        draft.transforms[tid]!.variations[
+                          generateVariationId()
+                        ] = structuredClone(getVariationDefault('linear', 1))
+                      })
+                    }}
+                  >
+                    <Plus />
+                  </button>
+                </div>
               )}
             </For>
             <Card class={ui.buttonCard}>

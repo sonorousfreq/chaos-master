@@ -43,7 +43,6 @@
   padding: var(--space-2);
   gap: var(--space-2);
   overflow-y: auto;
-  scrollbar-color: #5558 transparent;
 }
 
 .select {
@@ -178,13 +177,73 @@
   }
 }
 
+.transform-grid {
+  display: grid;
+  align-items: center;
+  justify-items: stretch;
+  border: 2px solid;
+  border-radius: var(--space-3);
+  font-size: small;
+
+  padding: var(--space-3);
+  gap: var(--space-3);
+  /* required for delete button to position absolutely */
+  position: relative;
+
+  color: var(--neutral-600);
+  border-color: var(--neutral-200);
+  background-color: white;
+  [data-theme='dark'] & {
+    color: var(--neutral-400);
+    border-color: var(--neutral-900);
+    background-color: var(--neutral-950);
+  }
+}
+
+.transform-grid-first-row {
+  padding-top: var(--space-2);
+}
+
+.transform-grid-row {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 0.5fr;
+
+  justify-items: stretch;
+  gap: var(--space-3);
+  font-size: small;
+
+  align-items: center;
+
+  /* required for delete button to position absolutely */
+  position: relative;
+}
+
+.delete-variation-button {
+  top: -0.5rem;
+  right: -0.5rem;
+  border: none;
+  border-radius: var(--round);
+  position: absolute;
+  width: 0.8rem;
+  height: 0.8rem;
+
+  cursor: pointer;
+
+  color: var(--neutral-600);
+  &:hover {
+    color: black;
+  }
+
+  [data-theme='dark'] & {
+    color: var(--neutral-500);
+    &:hover {
+      color: white;
+    }
+  }
+}
+
 .variation-button {
-  /* background: linear-gradient(135deg, #555, #444); */
-  background: linear-gradient(
-    to bottom,
-    var(--color),
-    oklab(from var(--color) calc(l * 0.8) a b)
-  );
+  background: linear-gradient(135deg, #555, #444);
   color: white;
   border: none;
   padding: 0.3rem 0.3rem;
@@ -213,4 +272,33 @@
 
 .variation-button:hover::before {
   left: 100%;
+}
+
+.variation-button-text {
+  pointer-events: none;
+}
+
+.variation-button-svg-color {
+  top: 0px;
+  left: 0px;
+  position: absolute;
+  pointer-events: none; /* allow clicks through badge */
+  transform-origin: center;
+}
+
+.variation-button-color {
+  filter: drop-shadow(0 1px 2px black);
+}
+.variation-button-color-circle {
+  r: 0.3rem;
+  cx: 0.6rem;
+  cy: 0.6rem;
+  fill: var(--color);
+  stroke: white;
+  stroke-width: 1px;
+  transition: r 250ms;
+}
+
+.affine-editor {
+  min-height: 25vh;
 }
