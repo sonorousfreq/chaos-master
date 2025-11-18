@@ -61,6 +61,7 @@ import { getParamsEditor, getVariationDefault } from './flame/variations/utils'
 import { Cross, Plus } from './icons'
 import { AutoCanvas } from './lib/AutoCanvas'
 import { Root } from './lib/Root'
+import WebgpuNotSupported from './lib/WebgpuNotSupported'
 import { WheelZoomCamera2D } from './lib/WheelZoomCamera2D'
 import { createStoreHistory } from './utils/createStoreHistory'
 import { addFlameDataToPng } from './utils/flameInPng'
@@ -124,7 +125,7 @@ function App(props: AppProps) {
   const [flameDescriptor, setFlameDescriptor, history] = createStoreHistory(
     createStore(
       structuredClone(
-        props.flameFromQuery ? props.flameFromQuery : examples.invCircleFrac,
+        props.flameFromQuery ? props.flameFromQuery : examples.example1,
       ),
     ),
   )
@@ -252,7 +253,11 @@ function App(props: AppProps) {
   return (
     <ChangeHistoryContextProvider value={history}>
       <Dropzone class={ui.layout} onDrop={onDrop}>
-        <Root adapterOptions={{ powerPreference: 'high-performance' }}>
+        <Root
+          adapterOptions={{
+            powerPreference: 'high-performance',
+          }}
+        >
           <div
             class={ui.canvasContainer}
             classList={{ [ui.fullscreen]: !showSidebar() }}
@@ -340,7 +345,6 @@ function App(props: AppProps) {
                     <Cross />
                   </button>
                   <div
-                    // class={ui.transformGridRow}
                     classList={{
                       [ui.transformGridRow]: true,
                       [ui.transformGridFirstRow]: true,
@@ -651,6 +655,8 @@ function App(props: AppProps) {
   )
 }
 
+const { navigator } = globalThis
+
 export function Wrappers() {
   const [flameFromQuery] = createResource(async () => {
     const param = new URLSearchParams(window.location.search)
@@ -665,12 +671,32 @@ export function Wrappers() {
     return undefined
   })
 
+  const [isWebgpuSupported] = createResource(async () => {
+    if (!('gpu' in navigator)) {
+      return false
+    }
+
+    try {
+      const adapter = await navigator.gpu.requestAdapter()
+      return !!adapter
+    } catch (_) {
+      return false
+    }
+  })
+
   return (
     <ThemeContextProvider>
       <Modal>
         <Suspense>
-          <Show when={flameFromQuery.state === 'ready'}>
-            <App flameFromQuery={flameFromQuery()} />
+          <Show
+            when={
+              isWebgpuSupported.state === 'ready' && isWebgpuSupported.latest
+            }
+            fallback={<WebgpuNotSupported />}
+          >
+            <Show when={flameFromQuery.state === 'ready'}>
+              <App flameFromQuery={flameFromQuery()} />
+            </Show>
           </Show>
         </Suspense>
       </Modal>

@@ -12,7 +12,9 @@ type RootProps = {
 
 export function Root(props: ParentProps<RootProps>) {
   const [webgpu] = createResource(
-    () => ({ adapterOptions: props.adapterOptions }),
+    () => ({
+      adapterOptions: props.adapterOptions,
+    }),
     async ({ adapterOptions }) => {
       let root: TgpuRoot | undefined = undefined
       let device: GPUDevice | undefined = undefined
@@ -22,13 +24,20 @@ export function Root(props: ParentProps<RootProps>) {
       })
       const adapter = await navigator.gpu.requestAdapter(adapterOptions)
       if (!adapter) {
+        console.warn(
+          `Failed to get GPUAdapter, make sure to use a browser with webgpu support.`,
+        )
         throw new Error(
-          `Failed to get GPUAdapter, make sure to use a browser with WebGPU support.`,
+          `Failed to get GPUAdapter, make sure to use a browser with webgpu support.`,
         )
       }
       console.info(`Using ${adapter.info.vendor} adapter.`)
+
       device = await adapter.requestDevice({
         requiredFeatures: ['timestamp-query'],
+        requiredLimits: {
+          maxStorageBuffersInVertexStage: 1,
+        },
       })
       root = tgpu.initFromDevice({ device })
       return { adapter, device, root }

@@ -7,9 +7,9 @@ import { example5 } from './example5'
 import { example6 } from './example6'
 import { example7 } from './example7'
 import { invCircleEx } from './invCircle'
+import { invCircleFrac } from './invCircleFrac'
 import { linear1 } from './linear1'
 import type { FlameDescriptor } from '../schema/flameSchema'
-import { invCircleFrac } from './invCircleFrac'
 
 export const examples = {
   empty,

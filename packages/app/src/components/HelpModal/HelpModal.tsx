@@ -71,7 +71,6 @@ async function getGPUDeviceInformation() {
     throw new Error(`WebGPU is not supported`)
   }
   const { info, limits } = adapter
-
   // This property exists only when WebGPU Developer Features flag is set
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const memoryHeaps: { size: number }[] | undefined = (info as any).memoryHeaps
