@@ -35,9 +35,6 @@ export function Root(props: ParentProps<RootProps>) {
 
       device = await adapter.requestDevice({
         requiredFeatures: ['timestamp-query'],
-        requiredLimits: {
-          maxStorageBuffersInVertexStage: 1,
-        },
       })
       root = tgpu.initFromDevice({ device })
       return { adapter, device, root }
