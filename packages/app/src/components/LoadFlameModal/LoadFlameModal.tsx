@@ -19,26 +19,24 @@ const CANCEL = 'cancel'
 
 function Preview(props: { flameDescriptor: FlameDescriptor }) {
   return (
-    <Root adapterOptions={{ powerPreference: 'high-performance' }}>
-      <AutoCanvas pixelRatio={1}>
-        <Camera2D
-          position={vec2f(
-            ...props.flameDescriptor.renderSettings.camera.position,
-          )}
-          zoom={props.flameDescriptor.renderSettings.camera.zoom}
-        >
-          <Flam3
-            quality={0.8}
-            pointCountPerBatch={2e4}
-            adaptiveFilterEnabled={true}
-            flameDescriptor={props.flameDescriptor}
-            renderInterval={1}
-            onExportImage={undefined}
-            edgeFadeColor={vec4f(0)}
-          />
-        </Camera2D>
-      </AutoCanvas>
-    </Root>
+    <AutoCanvas pixelRatio={1}>
+      <Camera2D
+        position={vec2f(
+          ...props.flameDescriptor.renderSettings.camera.position,
+        )}
+        zoom={props.flameDescriptor.renderSettings.camera.zoom}
+      >
+        <Flam3
+          quality={0.8}
+          pointCountPerBatch={2e4}
+          adaptiveFilterEnabled={true}
+          flameDescriptor={props.flameDescriptor}
+          renderInterval={1}
+          onExportImage={undefined}
+          edgeFadeColor={vec4f(0)}
+        />
+      </Camera2D>
+    </AutoCanvas>
   )
 }
 
@@ -83,21 +81,23 @@ function LoadFlameModal(props: LoadFlameModalProps) {
       </section>
       <h2>Example Gallery</h2>
       <section class={ui.gallery}>
-        <For each={recordEntries(examples)}>
-          {([exampleId, example], i) => (
-            <button
-              class={ui.item}
-              onClick={() => {
-                props.respond(example)
-              }}
-            >
-              <DelayedShow delayMs={i() * 50}>
-                <Preview flameDescriptor={example} />
-              </DelayedShow>
-              <div class={ui.itemTitle}>{exampleId}</div>
-            </button>
-          )}
-        </For>
+        <Root adapterOptions={{ powerPreference: 'high-performance' }}>
+          <For each={recordEntries(examples)}>
+            {([exampleId, example], i) => (
+              <button
+                class={ui.item}
+                onClick={() => {
+                  props.respond(example)
+                }}
+              >
+                <DelayedShow delayMs={i() * 50}>
+                  <Preview flameDescriptor={example} />
+                </DelayedShow>
+                <div class={ui.itemTitle}>{exampleId}</div>
+              </button>
+            )}
+          </For>
+        </Root>
       </section>
     </>
   )

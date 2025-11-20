@@ -55,7 +55,7 @@ function PreviewFinalFlame(props: {
   setFlameZoom: Setter<number>
 }) {
   return (
-    <Root adapterOptions={{ powerPreference: 'high-performance' }}>
+    <>
       <AutoCanvas class={ui.canvas} pixelRatio={1}>
         <WheelZoomCamera2D
           zoom={[
@@ -78,13 +78,13 @@ function PreviewFinalFlame(props: {
           />
         </WheelZoomCamera2D>
       </AutoCanvas>
-    </Root>
+    </>
   )
 }
 
 function VariationPreview(props: { flame: FlameDescriptor }) {
   return (
-    <Root adapterOptions={{ powerPreference: 'high-performance' }}>
+    <>
       <AutoCanvas class={ui.canvas} pixelRatio={1}>
         <Camera2D
           position={vec2f(...props.flame.renderSettings.camera.position)}
@@ -101,7 +101,7 @@ function VariationPreview(props: { flame: FlameDescriptor }) {
           />
         </Camera2D>
       </AutoCanvas>
-    </Root>
+    </>
   )
 }
 type RespondType =
@@ -284,7 +284,7 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
     },
   })
   return (
-    <>
+    <Root adapterOptions={{ powerPreference: 'high-performance' }}>
       <ModalTitleBar
         onClose={() => {
           props.respond(CANCEL)
@@ -450,7 +450,7 @@ function ShowVariationSelector(props: VariationSelectorModalProps) {
           </div>
         </div>
       </section>
-    </>
+    </Root>
   )
 }
 

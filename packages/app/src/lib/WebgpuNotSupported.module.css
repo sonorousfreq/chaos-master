@@ -16,16 +16,6 @@
   padding: 2rem;
 }
 
-.logoBg {
-  position: absolute;
-  inset: 0;
-  background: center / contain no-repeat;
-  opacity: 0.15;
-  animation: pulse 8s infinite ease-in-out;
-  pointer-events: none;
-  z-index: 1;
-}
-
 .content {
   position: relative;
   z-index: 2;

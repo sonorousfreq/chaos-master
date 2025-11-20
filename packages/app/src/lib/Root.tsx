@@ -19,9 +19,11 @@ export function Root(props: ParentProps<RootProps>) {
       let root: TgpuRoot | undefined = undefined
       let device: GPUDevice | undefined = undefined
       onCleanup(() => {
+        console.info('Cleaning up adapters...')
         root?.destroy()
         device?.destroy()
       })
+
       const adapter = await navigator.gpu.requestAdapter(adapterOptions)
       if (!adapter) {
         console.warn(
@@ -29,9 +31,11 @@ export function Root(props: ParentProps<RootProps>) {
         )
         throw new Error(
           `Failed to get GPUAdapter, make sure to use a browser with webgpu support.`,
+          { cause: 'WebGPU' },
         )
       }
-      console.info(`Using ${adapter.info.vendor} adapter.`)
+      // console.info(`Using ${adapter.info.vendor} adapter.`)
+      console.info(`Creating new adapter.`)
 
       device = await adapter.requestDevice({
         requiredFeatures: ['timestamp-query'],

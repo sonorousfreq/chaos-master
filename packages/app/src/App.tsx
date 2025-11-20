@@ -3,6 +3,7 @@ import {
   createMemo,
   createResource,
   createSignal,
+  ErrorBoundary,
   For,
   Show,
   Suspense,
@@ -11,6 +12,7 @@ import { createStore } from 'solid-js/store'
 import { Dynamic } from 'solid-js/web'
 import { vec2f, vec3f, vec4f } from 'typegpu/data'
 import { clamp } from 'typegpu/std'
+import { exportPngIOS, isIOS } from '@/appleUtils'
 import { recordEntries, recordKeys } from '@/utils/record'
 import ui from './App.module.css'
 import { AffineEditor } from './components/AffineEditor/AffineEditor'
@@ -61,7 +63,7 @@ import { getParamsEditor, getVariationDefault } from './flame/variations/utils'
 import { Cross, Plus } from './icons'
 import { AutoCanvas } from './lib/AutoCanvas'
 import { Root } from './lib/Root'
-import WebgpuNotSupported from './lib/WebgpuNotSupported'
+import { WebgpuNotSupported } from './lib/WebgpuNotSupported'
 import { WheelZoomCamera2D } from './lib/WheelZoomCamera2D'
 import { createStoreHistory } from './utils/createStoreHistory'
 import { addFlameDataToPng } from './utils/flameInPng'
@@ -218,14 +220,12 @@ function App(props: AppProps) {
       return true
     },
   })
-
-  const exportCanvasImage = (canvas: HTMLCanvasElement) => {
-    setOnExportImage(undefined)
+  const exportPng = (canvas: HTMLCanvasElement, flame: FlameDescriptor) => {
     canvas.toBlob(async (blob) => {
       if (!blob) return
       const imgData = await blob.arrayBuffer()
       const pngBytes = new Uint8Array(imgData)
-      const encodedFlames = await compressJsonQueryParam(flameDescriptor)
+      const encodedFlames = await compressJsonQueryParam(flame)
       const imgExtData = addFlameDataToPng(encodedFlames, pngBytes)
       const fileUrlExt = URL.createObjectURL(imgExtData)
       const downloadLink = window.document.createElement('a')
@@ -233,6 +233,15 @@ function App(props: AppProps) {
       downloadLink.download = 'flame.png'
       downloadLink.click()
     })
+  }
+  const exportCanvasImage = (canvas: HTMLCanvasElement) => {
+    console.info('Exporting image...image?')
+    setOnExportImage(undefined)
+    if (isIOS()) {
+      exportPngIOS(canvas, flameDescriptor)
+    } else {
+      exportPng(canvas, flameDescriptor)
+    }
   }
 
   createEffect(() => {
@@ -525,7 +534,7 @@ function App(props: AppProps) {
                 formatValue={(value) => value.toString()}
               />
               <label class={ui.labeledInput}>
-                Draw Mode
+                <span>Draw Mode</span>
                 <select
                   class={ui.select}
                   value={flameDescriptor.renderSettings.drawMode}
@@ -545,7 +554,7 @@ function App(props: AppProps) {
                 <span></span>
               </label>
               <label class={ui.labeledInput}>
-                Color Init Mode
+                <span>Color Init Mode</span>
                 <select
                   class={ui.select}
                   value={flameDescriptor.renderSettings.colorInitMode}
@@ -567,7 +576,7 @@ function App(props: AppProps) {
                 <span></span>
               </label>
               <label class={ui.labeledInput}>
-                Background Color
+                <span>Background Color</span>
                 <ColorPicker
                   value={
                     flameDescriptor.renderSettings.backgroundColor
@@ -585,7 +594,7 @@ function App(props: AppProps) {
                 when={
                   flameDescriptor.renderSettings.backgroundColor !== undefined
                 }
-                fallback={<span />}
+                fallback={<span class={ui.noSelect} />}
               >
                 <Button
                   onClick={() => {
@@ -618,7 +627,7 @@ function App(props: AppProps) {
             </Card>
             <Card>
               <label class={ui.labeledInput}>
-                Adaptive filter
+                <span>Adaptive filter</span>
                 <Checkbox
                   checked={adaptiveFilterEnabled()}
                   onChange={(checked) => setAdaptiveFilterEnabled(checked)}
@@ -673,32 +682,40 @@ export function Wrappers() {
 
   const [isWebgpuSupported] = createResource(async () => {
     if (!('gpu' in navigator)) {
-      return false
+      throw new Error('Unsupported browser or device! Check WebGPU support.', {
+        cause: 'WebGPU',
+      })
     }
 
-    try {
-      const adapter = await navigator.gpu.requestAdapter()
-      return !!adapter
-    } catch (_) {
-      return false
+    const adapter = await navigator.gpu.requestAdapter()
+    if (!adapter) {
+      throw new Error('Unsupported browser or device! Check WebGPU support.', {
+        cause: 'WebGPU',
+      })
     }
+    return true
   })
+
+  const errorHandler = (err, _: () => void) => {
+    if (err instanceof Error) {
+      if (err.cause === 'WebGPU') {
+        return <WebgpuNotSupported />
+      }
+    }
+    throw err
+  }
 
   return (
     <ThemeContextProvider>
       <Modal>
-        <Suspense>
-          <Show
-            when={
-              isWebgpuSupported.state === 'ready' && isWebgpuSupported.latest
-            }
-            fallback={<WebgpuNotSupported />}
-          >
+        <ErrorBoundary fallback={errorHandler}>
+          {isWebgpuSupported()}
+          <Suspense>
             <Show when={flameFromQuery.state === 'ready'}>
               <App flameFromQuery={flameFromQuery()} />
             </Show>
-          </Show>
-        </Suspense>
+          </Suspense>
+        </ErrorBoundary>
       </Modal>
     </ThemeContextProvider>
   )

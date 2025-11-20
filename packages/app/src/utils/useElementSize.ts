@@ -27,7 +27,7 @@ export function useElementSize(
       let contentBox
       const entry = entries[0]!
 
-      if (!entry.devicePixelContentBoxSize) {
+      if (!entry.devicePixelContentBoxSize[0]) {
         // Safari support (ios)
         contentBox = Array.isArray(entry.contentBoxSize)
           ? entry.contentBoxSize[0]
@@ -45,7 +45,7 @@ export function useElementSize(
       // Don't measure the element if not connected to the document.
       // Element existing but not connected to document can happen while
       // Suspense mechanism is rendering the fallback.
-      if (!t.isConnected || !contentBox || !pixelContentBox) {
+      if (!t.isConnected) {
         return
       }
       const width = contentBox.inlineSize
