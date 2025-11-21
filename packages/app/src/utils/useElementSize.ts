@@ -27,7 +27,7 @@ export function useElementSize(
       let contentBox
       const entry = entries[0]!
 
-      if (!entry.devicePixelContentBoxSize[0]) {
+      if (!Array.isArray(entry.devicePixelContentBoxSize)) {
         // Safari support (ios)
         contentBox = Array.isArray(entry.contentBoxSize)
           ? entry.contentBoxSize[0]
