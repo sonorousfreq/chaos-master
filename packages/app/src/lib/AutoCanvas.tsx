@@ -17,7 +17,6 @@ type AutoCanvasProps = {
 export function AutoCanvas(props: ParentProps<AutoCanvasProps>) {
   const { device } = useRootContext()
 
-  console.info('Auto canvas being created on device')
   let canEl: HTMLCanvasElement | null
   const [canvas, setCanvas] = createSignal<HTMLCanvasElement>()
 

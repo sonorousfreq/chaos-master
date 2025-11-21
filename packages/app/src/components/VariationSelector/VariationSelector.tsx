@@ -73,7 +73,6 @@ function PreviewFinalFlame(props: {
             adaptiveFilterEnabled={false}
             flameDescriptor={props.flame}
             renderInterval={10}
-            onExportImage={undefined}
             edgeFadeColor={vec4f(0)}
           />
         </WheelZoomCamera2D>
@@ -96,7 +95,6 @@ function VariationPreview(props: { flame: FlameDescriptor }) {
             adaptiveFilterEnabled={false}
             flameDescriptor={props.flame}
             renderInterval={10}
-            onExportImage={undefined}
             edgeFadeColor={vec4f(0)}
           />
         </Camera2D>
@@ -471,15 +469,17 @@ export function createVariationSelector(
     const result = await requestModal<RespondType>({
       class: ui.modalNoScroll,
       content: ({ respond }) => (
-        <ChangeHistoryContextProvider value={history}>
-          <ShowVariationSelector
-            currentVar={currentVar}
-            currentFlame={currentFlame}
-            transformId={tid}
-            variationId={vid}
-            respond={respond}
-          />
-        </ChangeHistoryContextProvider>
+        <Root adapterOptions={{ powerPreference: 'high-performance' }}>
+          <ChangeHistoryContextProvider value={history}>
+            <ShowVariationSelector
+              currentVar={currentVar}
+              currentFlame={currentFlame}
+              transformId={tid}
+              variationId={vid}
+              respond={respond}
+            />
+          </ChangeHistoryContextProvider>
+        </Root>
       ),
     })
     setVarSelectorModalIsOpen(false)

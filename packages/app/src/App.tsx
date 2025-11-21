@@ -262,11 +262,7 @@ function App(props: AppProps) {
   return (
     <ChangeHistoryContextProvider value={history}>
       <Dropzone class={ui.layout} onDrop={onDrop}>
-        <Root
-          adapterOptions={{
-            powerPreference: 'high-performance',
-          }}
-        >
+        <>
           <div
             class={ui.canvasContainer}
             classList={{ [ui.fullscreen]: !showSidebar() }}
@@ -301,7 +297,7 @@ function App(props: AppProps) {
               </WheelZoomCamera2D>
             </AutoCanvas>
           </div>
-        </Root>
+        </>
         <ViewControls
           zoom={flameDescriptor.renderSettings.camera.zoom}
           setZoom={setFlameZoom}
@@ -664,8 +660,6 @@ function App(props: AppProps) {
   )
 }
 
-const { navigator } = globalThis
-
 export function Wrappers() {
   const [flameFromQuery] = createResource(async () => {
     const param = new URLSearchParams(window.location.search)
@@ -678,22 +672,6 @@ export function Wrappers() {
       }
     }
     return undefined
-  })
-
-  const [isWebgpuSupported] = createResource(async () => {
-    if (!('gpu' in navigator)) {
-      throw new Error('Unsupported browser or device! Check WebGPU support.', {
-        cause: 'WebGPU',
-      })
-    }
-
-    const adapter = await navigator.gpu.requestAdapter()
-    if (!adapter) {
-      throw new Error('Unsupported browser or device! Check WebGPU support.', {
-        cause: 'WebGPU',
-      })
-    }
-    return true
   })
 
   const errorHandler = (err, _: () => void) => {
@@ -709,12 +687,17 @@ export function Wrappers() {
     <ThemeContextProvider>
       <Modal>
         <ErrorBoundary fallback={errorHandler}>
-          {isWebgpuSupported()}
-          <Suspense>
-            <Show when={flameFromQuery.state === 'ready'}>
-              <App flameFromQuery={flameFromQuery()} />
-            </Show>
-          </Suspense>
+          <Root
+            adapterOptions={{
+              powerPreference: 'high-performance',
+            }}
+          >
+            <Suspense>
+              <Show when={flameFromQuery.state === 'ready'}>
+                <App flameFromQuery={flameFromQuery()} />
+              </Show>
+            </Suspense>
+          </Root>
         </ErrorBoundary>
       </Modal>
     </ThemeContextProvider>

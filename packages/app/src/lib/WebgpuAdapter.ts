@@ -1,0 +1,67 @@
+let gpuDevice: GPUDevice | null = null
+let gpuAdapter: GPUAdapter | null = null
+
+const { navigator } = window
+
+export async function getWebgpuDevice(
+  adapterPreferences?: GPURequestAdapterOptions,
+  deviceFeatures?: GPUDeviceDescriptor,
+) {
+  if (gpuDevice !== null && gpuAdapter !== null) {
+    return { adapter: gpuAdapter, device: gpuDevice }
+  }
+
+  // Check to ensure the user agent supports WebGPU.
+  if (!('gpu' in navigator)) {
+    console.error('User agent doesn’t support WebGPU.')
+    throw new Error(
+      `Failed to get GPUAdapter, make sure to use a browser with webgpu support.`,
+      { cause: 'WebGPU' },
+    )
+  }
+
+  // Request an adapter.
+  gpuAdapter = await navigator.gpu.requestAdapter(adapterPreferences)
+
+  // requestAdapter may resolve with null if no suitable adapters are found.
+  if (!gpuAdapter) {
+    console.error('No WebGPU adapters found.')
+    throw new Error(
+      `Failed to get GPUAdapter, make sure to use a browser with webgpu support.`,
+      { cause: 'WebGPU' },
+    )
+  }
+  if(gpuAdapter.info.vendor !== '') {
+    console.info(`Using ${gpuAdapter.info.vendor} WebGPU adapter.`)
+  }
+
+  // Request a device.
+  // Note that the promise will reject if invalid options are passed to the optional
+  // dictionary. To avoid the promise rejecting always check any features and limits
+  // against the adapters features and limits prior to calling requestDevice().
+  gpuDevice = await gpuAdapter.requestDevice(deviceFeatures)
+
+  // requestDevice will never return null, but if a valid device request can’t be
+  // fulfilled for some reason it may resolve to a device which has already been lost.
+  // Additionally, devices can be lost at any time after creation for a variety of reasons
+  // (ie: browser resource management, driver updates), so it’s a good idea to always
+  // handle lost devices gracefully.
+  gpuDevice.lost
+    .then((info) => {
+      console.warn(`WebGPU device was lost: ${info.message}`)
+
+      gpuDevice = null
+
+      // Many causes for lost devices are transient, so applications should try getting a
+      // new device once a previous one has been lost unless the loss was caused by the
+      // application intentionally destroying the device. Note that any WebGPU resources
+      // created with the previous device (buffers, textures, etc.) will need to be
+      // re-created with the new one.
+      if (info.reason !== 'destroyed') {
+        // initializeWebGPU();
+      }
+    })
+    .catch(console.error)
+
+  return { adapter: gpuAdapter, device: gpuDevice }
+}
