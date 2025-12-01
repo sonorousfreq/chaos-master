@@ -23,7 +23,7 @@ export const invCircleEx1 = defineExample({
         bc571c35_0b03_4865_a765_d00cd71031a6: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 1, a: 0, b: 0, restricted: 0 },
+          params: { radius: 1, a: 0, b: 0, cx: 0, cy: 0, restricted: 0 },
         },
       },
     },
@@ -46,8 +46,8 @@ export const invCircleEx1 = defineExample({
 export const invCircleEx2 = defineExample({
   metadata: { author: 'unknown' },
   renderSettings: {
-    exposure: -0.605,
-    skipIters: 13,
+    exposure: -0.641,
+    skipIters: 21,
     drawMode: 'light',
     colorInitMode: 'colorInitPosition',
     backgroundColor: [0, 0, 0],
@@ -66,7 +66,14 @@ export const invCircleEx2 = defineExample({
         bc571c35_0b03_4865_a765_d00cd71031a6: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 0.5, a: -0.5, b: 0, restricted: 1 },
+          params: {
+            radius: 0.5,
+            a: -0.5,
+            b: 0,
+            cx: -0.5,
+            cy: 0,
+            restricted: 1,
+          },
         },
       },
     },
@@ -79,7 +86,7 @@ export const invCircleEx2 = defineExample({
         d206ee66_3217_4da9_8c3a_c6953a96f67a: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 1, a: -1, b: -1, restricted: 1 },
+          params: { radius: 1, a: -1, b: -1, cx: -1, cy: -1, restricted: 1 },
         },
       },
     },
@@ -92,7 +99,7 @@ export const invCircleEx2 = defineExample({
         ad3a5e09_a04f_41d1_a82f_df6b1bc30bf1: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 1, a: -1, b: 1, restricted: 1 },
+          params: { radius: 1, a: -1, b: 1, cx: -1, cy: 1, restricted: 1 },
         },
       },
     },
@@ -105,7 +112,7 @@ export const invCircleEx2 = defineExample({
         faf02b1e_5b58_43b1_8b57_41b1aab6275d: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 1, a: 1, b: -1, restricted: 1 },
+          params: { radius: 1, a: 1, b: -1, cx: 1, cy: -1, restricted: 1 },
         },
       },
     },
@@ -118,46 +125,53 @@ export const invCircleEx2 = defineExample({
         '40d782b6_3e17_4267_896f_4824267d7058': {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 1, a: 1, b: 1, restricted: 1 },
+          params: { radius: 1, a: 1, b: 1, cx: 1, cy: 1, restricted: 1 },
         },
       },
     },
     eec7a7dc_90a6_4f45_8ddc_a9b3d05a5897: {
       probability: 1,
-      color: { x: -0.17469070851802826, y: 0.12231368571519852 },
       preAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
       postAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
+      color: { x: -0.17469070851802826, y: 0.12231368571519852 },
       variations: {
         ef78fa70_9a69_40dd_a3af_53883e5fc9c9: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 0.5, a: 0.5, b: 0, restricted: 1 },
+          params: { radius: 0.5, a: 0.5, b: 0, cx: 0.5, cy: 0, restricted: 1 },
         },
       },
     },
     '3db52413_ad76_44a2_9f4c_64300f64d765': {
       probability: 1,
-      color: { x: -0.19901539385318756, y: -0.088944211602211 },
       preAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
       postAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
+      color: { x: -0.19901539385318756, y: -0.088944211602211 },
       variations: {
         '8edf1772_f43d_4101_b4c5_68a2d57377b8': {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 0.5, a: 0, b: -0.5, restricted: 1 },
+          params: {
+            radius: 0.5,
+            a: 0,
+            b: -0.5,
+            cx: 0,
+            cy: -0.5,
+            restricted: 1,
+          },
         },
       },
     },
     fc8c50c7_3a69_499e_a403_6e010485c5da: {
       probability: 1,
-      color: { x: -0.04207536578178406, y: 0.1791514754295349 },
       preAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
       postAffine: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 },
+      color: { x: -0.04207536578178406, y: 0.1791514754295349 },
       variations: {
         '0c305855_ea7d_4638_b5c2_bba5898b7bc5': {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 0.5, a: 0, b: 0.5, restricted: 1 },
+          params: { radius: 0.5, a: 0, b: 0.5, cx: 0, cy: 0.5, restricted: 1 },
         },
       },
     },
@@ -187,7 +201,7 @@ export const invCircleEx3 = defineExample({
         bc571c35_0b03_4865_a765_d00cd71031a6: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 0.75, a: 0, b: 0, restricted: 1 },
+          params: { radius: 0.75, a: 0, b: 0, cx: 0, cy: 0, restricted: 1 },
         },
       },
     },
@@ -200,7 +214,7 @@ export const invCircleEx3 = defineExample({
         d206ee66_3217_4da9_8c3a_c6953a96f67a: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 1, a: -1, b: -1, restricted: 1 },
+          params: { radius: 1, a: -1, b: -1, cx: -1, cy: -1, restricted: 1 },
         },
       },
     },
@@ -213,7 +227,7 @@ export const invCircleEx3 = defineExample({
         ad3a5e09_a04f_41d1_a82f_df6b1bc30bf1: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 1, a: -1, b: 1, restricted: 1 },
+          params: { radius: 1, a: -1, b: 1, cx: -1, cy: 1, restricted: 1 },
         },
       },
     },
@@ -226,7 +240,7 @@ export const invCircleEx3 = defineExample({
         faf02b1e_5b58_43b1_8b57_41b1aab6275d: {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 1, a: 1, b: -1, restricted: 1 },
+          params: { radius: 1, a: 1, b: -1, cx: 1, cy: -1, restricted: 1 },
         },
       },
     },
@@ -239,7 +253,7 @@ export const invCircleEx3 = defineExample({
         '40d782b6_3e17_4267_896f_4824267d7058': {
           type: 'invCircle',
           weight: 1,
-          params: { radius: 1, a: 1, b: 1, restricted: 1 },
+          params: { radius: 1, a: 1, b: 1, cx: 1, cy: 1, restricted: 1 },
         },
       },
     },
