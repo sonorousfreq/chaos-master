@@ -15,6 +15,7 @@ export function RangeEditor(props: RangeEditorProps) {
   const decimals = () =>
     Number.isInteger(step()) ? 0 : ceil(log10(1 / (step() % 1)))
 
+  console.info('Prop', props.name, props.value)
   return (
     <Slider
       class={ui.alignLabelRight}

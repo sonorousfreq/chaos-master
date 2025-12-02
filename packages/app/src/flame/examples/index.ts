@@ -6,7 +6,8 @@ import { example4 } from './example4'
 import { example5 } from './example5'
 import { example6 } from './example6'
 import { example7 } from './example7'
-import { invCircleEx1, invCircleEx2, invCircleEx3 } from './invCircle'
+import { invCircleEx1, invCircleEx2 } from './invCircle'
+import { invCircle2Ex1 } from './invCircle2'
 import { linear1 } from './linear1'
 import type { FlameDescriptor } from '../schema/flameSchema'
 
@@ -22,6 +23,6 @@ export const examples = {
   linear1,
   invCircleEx1,
   invCircleEx2,
-  invCircleEx3,
+  invCircle2Ex1,
 } satisfies Record<string, FlameDescriptor>
 export type ExampleID = keyof typeof examples

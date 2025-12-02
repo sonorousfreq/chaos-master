@@ -16,11 +16,11 @@ const InvEllipseParams = struct({
 })
 
 const InvEllipseParamsDefaults: InvEllipseParams = {
-  a: 1.5,
-  b: 1.25,
+  a: 0.65,
+  b: 0.5,
   h: 0,
   k: 0,
-  restricted: 0,
+  restricted: 1,
 }
 
 const InvEllipseParamsEditor: EditorFor<InvEllipseParams> = (props) => (
